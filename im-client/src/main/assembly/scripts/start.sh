@@ -45,7 +45,7 @@ function exportClassPath(){
     CLASSPATH=$CLASSPATH:./conf
     export CLASSPATH
 }
-ulimit -n 65535
+#ulimit -n 65535
 exportClassPath
 
 
