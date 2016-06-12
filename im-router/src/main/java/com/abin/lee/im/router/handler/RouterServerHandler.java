@@ -3,6 +3,7 @@ package com.abin.lee.im.router.handler;
 
 import com.abin.lee.im.model.proto.MsgBodyProto;
 import com.abin.lee.im.model.proto.MsgHeaderProto;
+import com.google.protobuf.InvalidProtocolBufferException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -14,9 +15,12 @@ import io.netty.util.AttributeKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.text.MessageFormat;
+
 public class RouterServerHandler extends ChannelInboundHandlerAdapter {
-    private static final Logger logger = LogManager.getLogger(RouterServerHandler.class);
+    private static final Logger LOGGER = LogManager.getLogger(RouterServerHandler.class);
     private static final AttributeKey<ByteBuf> cumulationKey = AttributeKey.valueOf("cumulation");
+
     private final ByteToMessageDecoder.Cumulator MERGE_CUMULATOR = new ByteToMessageDecoder.Cumulator() {
         @Override
         public ByteBuf cumulate(ByteBufAllocator alloc, ByteBuf cumulation, ByteBuf in) {
@@ -40,82 +44,123 @@ public class RouterServerHandler extends ChannelInboundHandlerAdapter {
         return cumulation;
     }
 
+    public boolean isFirstChannelRead(ByteBuf cumulationBuf){
+          return cumulationBuf == null;
+    }
+
+    private ByteBuf getCumulationBufOfFirstRead(ByteBuf in){
+        boolean notLessThan4 = false;
+        ByteBuf cumulationBuf = null;
+        try {
+            if (in.readableBytes() >= 4) {
+                in.markReaderIndex();
+                int totalLen = in.readInt();
+                in.resetReaderIndex();
+                ByteBuf container = PooledByteBufAllocator.DEFAULT.heapBuffer(totalLen + 4);
+                container.writeBytes(in);
+                cumulationBuf = container;
+                notLessThan4 = true;
+            } else {
+                cumulationBuf = in;
+            }
+        } finally {
+            if (notLessThan4) {
+                in.release();
+            }
+        }
+        return cumulationBuf;
+    }
+
+    private MsgHeaderProto.MsgHeader parseMsgHeader(ByteBuf cumulationBuf) throws InvalidProtocolBufferException {
+        int headerLen = cumulationBuf.readInt();
+        byte[] headerBytes = new byte[headerLen];
+        cumulationBuf.readBytes(headerBytes);
+        MsgHeaderProto.MsgHeader msgHeader = MsgHeaderProto.MsgHeader.parseFrom(headerBytes);
+        LOGGER.info("msgHeader=" + msgHeader);
+        System.out.println("msgHeader=" + msgHeader);
+        System.out.println("cumulationBuf.isReadable()=" + cumulationBuf.isReadable());
+        return msgHeader;
+    }
+
+    private MsgBodyProto.MsgBody parseMsgBody(ByteBuf cumulationBuf, MsgHeaderProto.MsgHeader msgHeader) throws InvalidProtocolBufferException {
+        int msgBodyLength = msgHeader.getBodyLength();
+        byte[] msgBodyBytes = new byte[msgBodyLength];
+        cumulationBuf.readBytes(msgBodyBytes);
+        MsgBodyProto.MsgBody msgBody = MsgBodyProto.MsgBody.parseFrom(msgBodyBytes);
+        LOGGER.info("msgBody=" + msgBody);
+        System.out.println("msgBody=" + msgBody);
+        System.out.println("cumulationBuf.isReadable()=" + cumulationBuf.isReadable());
+        return msgBody;
+    }
+
+    private void dispatcherRequestMsg(ByteBuf cumulationBuf, Attribute<ByteBuf> cumulationAttr, ChannelHandlerContext ctx){
+        try {
+            int msgBytesLen = 4;
+            while (cumulationBuf.readableBytes() >= msgBytesLen) {
+                System.out.println("cumulationBuf.isReadable()=" + cumulationBuf.isReadable());
+                cumulationBuf.markReaderIndex();
+                int totalLen = cumulationBuf.readInt();
+                int cumulationValueLen = cumulationBuf.readableBytes();
+                if (cumulationValueLen < totalLen) {
+                    cumulationBuf.resetReaderIndex();
+                    LOGGER.warn("building is not completed!!");
+                    break;
+                }
+                System.out.println("cumulationBuf.isReadable()=" + cumulationBuf.isReadable());
+                // resolve msgHeader
+                MsgHeaderProto.MsgHeader msgHeader = this.parseMsgHeader(cumulationBuf);
+                // resolve msgBody
+                MsgBodyProto.MsgBody msgBody = this.parseMsgBody(cumulationBuf, msgHeader);
+
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            cleanCumulationResource(cumulationBuf, cumulationAttr, ctx);
+        }
+
+    }
+
+    private void cleanCumulationResource(ByteBuf cumulationValue, Attribute<ByteBuf> cumulationAttr,
+                                         ChannelHandlerContext ctx) {
+        // 如果没有可读数据释放buffer
+        if (cumulationValue != null && !cumulationValue.isReadable()) {
+            LOGGER.info(MessageFormat.format("Buffer({0}) Release!", cumulationValue.toString()));
+            cumulationValue.release();
+            cumulationValue = null;
+            cumulationAttr.set(null);
+        }
+        if (cumulationValue != null && cumulationValue.readableBytes() > 1 * 1024 * 1024) {
+            LOGGER.error("Message too big!!");
+            ctx.close();
+        }
+
+    }
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg)
             throws Exception {
         if (msg instanceof ByteBuf) {
             Attribute<ByteBuf> cumulationAttr = ctx.channel().attr(cumulationKey);
-            ByteBuf cumulationValue = cumulationAttr.get();
+            ByteBuf cumulationBuf = cumulationAttr.get();
             ByteBuf in = (ByteBuf) msg;
             try {
-                boolean first = cumulationValue == null;
-                if (first) {
-                    boolean notLessThan4 = false;
-                    try {
-                        if (in.readableBytes() >= 4) {
-                            in.markReaderIndex();
-                            int totalLen = in.readInt();
-                            if (totalLen > 1 * 1024 * 1024)// 1m
-                            {
-                                logger.warn("resolve Message too big!!" + totalLen + "bytes");
-                                in.release();
-                                ctx.close();
-                                return;
-                            }
-                            in.resetReaderIndex();
-                            ByteBuf container = PooledByteBufAllocator.DEFAULT.heapBuffer(totalLen + 4);
-                            container.writeBytes(in);
-                            cumulationValue = container;
-                            notLessThan4 = true;
-                        } else {
-                            cumulationValue = in;
-                        }
-                    } finally {
-                        if (notLessThan4) {
-                            in.release();
-                        }
-                    }
+                if (isFirstChannelRead(cumulationBuf)) {
+                    cumulationBuf = getCumulationBufOfFirstRead(in);
                 } else {
-                    cumulationValue = MERGE_CUMULATOR.cumulate(ctx.alloc(), cumulationValue, in);
+                    cumulationBuf = MERGE_CUMULATOR.cumulate(ctx.alloc(), cumulationBuf, in);
                 }
 
                 // save merge result
-                cumulationAttr.set(cumulationValue);
-                while (cumulationValue.readableBytes() >= 4) {
-                    System.out.println("cumulationValue.isReadable()=" + cumulationValue.isReadable());
-                    cumulationValue.markReaderIndex();
-                    int totalLen = cumulationValue.readInt();
-                    int cumulationValueLen = cumulationValue.readableBytes();
-                    if (cumulationValueLen < totalLen) {
-                        cumulationValue.resetReaderIndex();
-                        logger.warn("building is not completed!!");
-                        break;
-                    }
-                    System.out.println("cumulationValue.isReadable()=" + cumulationValue.isReadable());
-                    // resolve msgHeader
-                    int headerLen = cumulationValue.readInt();
-                    byte[] headerBytes = new byte[headerLen];
-                    cumulationValue.readBytes(headerBytes);
-                    MsgHeaderProto.MsgHeader msgHeader = MsgHeaderProto.MsgHeader.parseFrom(headerBytes);
-                    logger.info("msgHeader=" + msgHeader);
-                    System.out.println("msgHeader=" + msgHeader);
-                    System.out.println("cumulationValue.isReadable()=" + cumulationValue.isReadable());
-                    // resolve msgBody
-                    int msgBodyLength = msgHeader.getBodyLength();
-                    byte[] msgBodyBytes = new byte[msgBodyLength];
-                    cumulationValue.readBytes(msgBodyBytes);
-                    MsgBodyProto.MsgBody msgBody = MsgBodyProto.MsgBody.parseFrom(msgBodyBytes);
-                    logger.info("msgBody=" + msgBody);
-                    System.out.println("msgBody=" + msgBody);
-                    System.out.println("cumulationValue.isReadable()=" + cumulationValue.isReadable());
-
-
-                }
+                cumulationAttr.set(cumulationBuf);
+                //resolve msgHeader and msgBody
+                dispatcherRequestMsg(cumulationBuf, cumulationAttr, ctx);
             } finally {
                 // if thers is no data to read buffer
-                if (cumulationValue != null && !cumulationValue.isReadable()) {
-                    cumulationValue.release();
-                    cumulationValue = null;
+                if (cumulationBuf != null && !cumulationBuf.isReadable()) {
+                    cumulationBuf.release();
+                    cumulationBuf = null;
                     cumulationAttr.set(null);
                 }
             }

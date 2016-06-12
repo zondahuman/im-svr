@@ -20,7 +20,8 @@ public class GateWayChannelHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         int param = 10;
-        ByteBuf out = PooledByteBufAllocator.DEFAULT.directBuffer();
+        ByteBuf out = PooledByteBufAllocator.DEFAULT.buffer();
+//        ByteBuf out = PooledByteBufAllocator.DEFAULT.directBuffer();
         MsgHeaderProto.MsgHeader.Builder msgHeaderBuilder = createMsgHeader(param);
 
         MsgBodyProto.MsgBody msgBody = createMsgBody(param);
