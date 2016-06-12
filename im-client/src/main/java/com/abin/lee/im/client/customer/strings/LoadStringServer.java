@@ -1,18 +1,15 @@
-package com.abin.lee.im.gate;
+package com.abin.lee.im.client.customer.strings;
 
 
+import com.abin.lee.im.client.customer.strings.handler.LoadStringChannelHandler;
 import com.abin.lee.im.common.util.NamedThreadFactory;
-import com.abin.lee.im.gate.handler.GateWayChannelHandler;
-import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.Future;
@@ -20,8 +17,8 @@ import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class GateWayServer {
-    private static Logger LOGGER = LogManager.getLogger(GateWayServer.class);
+public class LoadStringServer {
+    private static Logger LOGGER = LogManager.getLogger(LoadStringServer.class);
 
     private NamedThreadFactory bossNamedThreadFac = new NamedThreadFactory("NettyAcceptSelectorProcessor", false);
     private NamedThreadFactory workerNamedThreadFac = new NamedThreadFactory("NettyReadSelectorProcessor", true);
@@ -48,7 +45,9 @@ public class GateWayServer {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ch.pipeline()
-                                    .addLast(new GateWayChannelHandler());
+                                    .addLast(new StringEncoder())
+                                    .addLast(new StringDecoder())
+                                    .addLast(new LoadStringChannelHandler());
                         };
                     });
 
@@ -74,10 +73,10 @@ public class GateWayServer {
     }
 
     public static void main(String[] args)throws Exception {
-        int port = 8085;
+        int port = 8088;
         if(args!=null && args.length > 0){
             port = Integer.valueOf(args[0]);
         }
-        new GateWayServer().connect(port, "127.0.0.1");
+        new LoadStringServer().connect(port, "127.0.0.1");
     }
 }

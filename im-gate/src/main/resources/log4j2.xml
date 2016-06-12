@@ -24,6 +24,7 @@
 	<Loggers>
 		<root level="info">
 			<AppenderRef ref="gatefile" />
+            <AppenderRef ref="STDOUT" />
 		</root>
 	</Loggers>
 </Configuration>

@@ -12,18 +12,18 @@
 		</Console>
 		<!-- Async Loggers will auto-flush in batches, so switch off immediateFlush. -->
 		<!-- info -->
-		<File name="routerfile" fileName="router.log">
+		<File name="clientfile" fileName="${sys:im-client}">
 			<PatternLayout>
 				<Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
 			</PatternLayout>
 		</File>
 		<Async name="asyncInfoAppender">
-			<AppenderRef ref="routerfile" />
+			<AppenderRef ref="clientfile" />
 		</Async>
 	</Appenders>
 	<Loggers>
 		<root level="info">
-			<AppenderRef ref="routerfile" />
+			<AppenderRef ref="clientfile" />
             <AppenderRef ref="STDOUT" />
 		</root>
 	</Loggers>
