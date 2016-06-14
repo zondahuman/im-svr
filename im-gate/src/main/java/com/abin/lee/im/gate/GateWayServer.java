@@ -5,6 +5,7 @@ import com.abin.lee.im.common.util.NamedThreadFactory;
 import com.abin.lee.im.gate.handler.GateWayChannelHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -37,6 +38,7 @@ public class GateWayServer {
         try{
             serverBootstrap.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
+                    .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                     .option(ChannelOption.SO_BACKLOG, 1024)
                     .option(ChannelOption.SO_KEEPALIVE, true)//  keepalive connect for ever
                     .option(ChannelOption.TCP_NODELAY, false)// nagle algorithm

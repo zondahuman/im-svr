@@ -4,6 +4,7 @@ package com.abin.lee.im.router;
 import com.abin.lee.im.common.util.NamedThreadFactory;
 import com.abin.lee.im.router.handler.RouterServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -37,6 +38,7 @@ public class RouterServer {
         try{
             serverBootstrap.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
+                    .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                     .option(ChannelOption.SO_BACKLOG, 1024)
                     .option(ChannelOption.SO_KEEPALIVE, true)// keepalive connect for ever
                     .option(ChannelOption.TCP_NODELAY, false)// nagle algorithm
