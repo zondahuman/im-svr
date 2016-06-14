@@ -46,6 +46,7 @@ public class RouterServer {
                     .option(ChannelOption.SO_RCVBUF, 1 * 1024 * 1024)// 1m
                     .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 256 * 1024) // 调大写出buffer为512kb
                     .handler(new LoggingHandler(LogLevel.INFO))
+                    .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
 
                         @Override
