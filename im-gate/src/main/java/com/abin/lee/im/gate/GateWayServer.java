@@ -3,6 +3,7 @@ package com.abin.lee.im.gate;
 
 import com.abin.lee.im.common.util.NamedThreadFactory;
 import com.abin.lee.im.gate.base.handler.GateWayChannelHandler;
+import com.abin.lee.im.gate.handler.AbstractBaseWay;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
@@ -17,16 +18,25 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.plugins.util.PluginManager;
 
-public class GateWayServer {
+import java.net.UnknownHostException;
+
+public class GateWayServer extends AbstractBaseWay {
     private static Logger LOGGER = LogManager.getLogger(GateWayServer.class);
+    static {
+        System.setProperty("AsyncLogger.RingBufferSize", String.valueOf(1 * 1024 * 1024));
+        System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
+        System.setProperty("AsyncLogger.ThreadNameStrategy", "CACHED");// 如果在线程池中通过Thread.setName()，这里需要修改为UNCACHED
+        System.setProperty("log4j.Clock", "CachedClock");
+    }
 
     private NamedThreadFactory bossNamedThreadFac = new NamedThreadFactory("NettyAcceptSelectorProcessor", false);
     private NamedThreadFactory workerNamedThreadFac = new NamedThreadFactory("NettyReadSelectorProcessor", true);
     private int availableCpu = Runtime.getRuntime().availableProcessors();
     private ServerBootstrap serverBootstrap;
 
-    public void connect(final int bindPort,String host)throws Exception{
+    public void connect()throws Exception{
         serverBootstrap = new ServerBootstrap();
         //conf server nio threadpool
         NioEventLoopGroup bossGroup = new NioEventLoopGroup(availableCpu, bossNamedThreadFac);
@@ -52,19 +62,6 @@ public class GateWayServer {
                         };
                     });
 
-            //binding port，sync wait success
-            ChannelFuture channelFuture = serverBootstrap.bind(host, bindPort).sync();
-
-            channelFuture.addListener(new GenericFutureListener<Future<Object>>() {
-                @Override
-                public void operationComplete(Future<Object> future) throws Exception {
-                    if (future.isSuccess()) {
-                        LOGGER.info("IM GateWayServer Start! binding port on:" + bindPort);
-                    }
-                }
-            });
-            //waiting listening port to wait shutdown
-            channelFuture.channel().closeFuture().sync();
         }finally{
             //exit Release resources
             bossGroup.shutdownGracefully();
@@ -73,11 +70,33 @@ public class GateWayServer {
 
     }
 
+    public void listen(final int bindPort,String host) throws Exception {
+        //binding port，sync wait success
+        ChannelFuture channelFuture = serverBootstrap.bind(host, bindPort).sync();
+
+        channelFuture.addListener(new GenericFutureListener<Future<Object>>() {
+            @Override
+            public void operationComplete(Future<Object> future) throws Exception {
+                if (future.isSuccess()) {
+                    LOGGER.info("IM GateWayServer Start! binding port on:" + bindPort);
+                }
+            }
+        });
+        //waiting listening port to wait shutdown
+        channelFuture.channel().closeFuture().sync();
+    }
+
+    public void start() throws Exception {
+        this.init();
+        connect();
+        listen(this.getWebPort(), this.getHostIp());
+        listen(this.getMobilePort(), this.getHostIp());
+    }
+
     public static void main(String[] args)throws Exception {
-        int port = 8085;
-        if(args!=null && args.length > 0){
-            port = Integer.valueOf(args[0]);
+         new GateWayServer().start();
+        while(true){
+
         }
-        new GateWayServer().connect(port, "127.0.0.1");
     }
 }

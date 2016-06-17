@@ -1,4 +1,4 @@
-package com.abin.lee.im.gate.base.enums;
+package com.abin.lee.im.common.enums.user;
 
 /**
  * Created with IntelliJ IDEA.

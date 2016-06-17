@@ -1,10 +1,8 @@
-package com.abin.lee.im.gate.base.business;
+package com.abin.lee.im.common.business.redis;
 
+import com.abin.lee.im.common.enums.user.UserConstantEnum;
 import com.abin.lee.im.common.redis.RedisService;
 import com.abin.lee.im.common.spring.base.SpringContextHolder;
-import com.abin.lee.im.common.spring.context.SpringContextUtils;
-import com.abin.lee.im.gate.base.enums.UserConstantEnum;
-import redis.clients.jedis.ShardedJedisPool;
 
 /**
  * Created with IntelliJ IDEA.
