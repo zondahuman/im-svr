@@ -3,6 +3,7 @@ package com.abin.lee.im.gate;
 
 import com.abin.lee.im.common.util.NamedThreadFactory;
 import com.abin.lee.im.gate.base.handler.GateWayChannelHandler;
+import com.abin.lee.im.gate.base.hook.GatewayShutdownHook;
 import com.abin.lee.im.gate.handler.AbstractBaseWay;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -18,12 +19,10 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.config.plugins.util.PluginManager;
-
-import java.net.UnknownHostException;
 
 public class GateWayServer extends AbstractBaseWay {
     private static Logger LOGGER = LogManager.getLogger(GateWayServer.class);
+
     static {
         System.setProperty("AsyncLogger.RingBufferSize", String.valueOf(1 * 1024 * 1024));
         System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
@@ -36,13 +35,14 @@ public class GateWayServer extends AbstractBaseWay {
     private int availableCpu = Runtime.getRuntime().availableProcessors();
     private ServerBootstrap serverBootstrap;
 
-    public void connect()throws Exception{
+
+    public void initConnect() throws Exception {
         serverBootstrap = new ServerBootstrap();
         //conf server nio threadpool
         NioEventLoopGroup bossGroup = new NioEventLoopGroup(availableCpu, bossNamedThreadFac);
-        NioEventLoopGroup workerGroup = new NioEventLoopGroup(availableCpu,workerNamedThreadFac);
+        NioEventLoopGroup workerGroup = new NioEventLoopGroup(availableCpu, workerNamedThreadFac);
         workerGroup.setIoRatio(100);
-        try{
+        try {
             serverBootstrap.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
@@ -62,7 +62,7 @@ public class GateWayServer extends AbstractBaseWay {
                         };
                     });
 
-        }finally{
+        } finally {
             //exit Release resources
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
@@ -70,7 +70,7 @@ public class GateWayServer extends AbstractBaseWay {
 
     }
 
-    public void listen(final int bindPort,String host) throws Exception {
+    public void listen(final int bindPort, String host) throws Exception {
         //binding port，sync wait success
         ChannelFuture channelFuture = serverBootstrap.bind(host, bindPort).sync();
 
@@ -87,16 +87,20 @@ public class GateWayServer extends AbstractBaseWay {
     }
 
     public void start() throws Exception {
+        LOGGER.info("start-------starting");
         this.init();
-        connect();
+        initConnect();
         listen(this.getWebPort(), this.getHostIp());
         listen(this.getMobilePort(), this.getHostIp());
+        LOGGER.info("start-------ending");
     }
 
-    public static void main(String[] args)throws Exception {
-         new GateWayServer().start();
-        while(true){
-
+    public static void main(String[] args) throws Exception {
+        new GateWayServer().start();
+        if (true) {
+            for(;;){}
         }
+        Runtime.getRuntime().addShutdownHook(new GatewayShutdownHook());
     }
+
 }

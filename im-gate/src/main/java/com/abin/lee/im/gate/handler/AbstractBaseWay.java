@@ -4,6 +4,8 @@ import com.abin.lee.im.common.business.curator.CuratorBusiness;
 import com.abin.lee.im.common.business.properties.GateWayPropertyConfig;
 import com.abin.lee.im.common.enums.common.ServerCconfigEnums;
 import com.google.common.primitives.Ints;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -16,10 +18,9 @@ import java.net.UnknownHostException;
  * To change this template use File | Settings | File Templates.
  */
 public abstract class AbstractBaseWay {
-    private static GateWayPropertyConfig propertyConfig = null;
+    private static Logger LOGGER = LogManager.getLogger(AbstractBaseWay.class);
 
     public void init() throws InterruptedException {
-        propertyConfig = GateWayPropertyConfig.getInstance();
         CuratorBusiness.initZookeeperClient();
         CuratorBusiness.registerGateWayZookeeper();
         CuratorBusiness.publishGateWayZookeeper();
@@ -28,6 +29,10 @@ public abstract class AbstractBaseWay {
 
     public String getWebAddress() throws UnknownHostException {
         return CuratorBusiness.getWebAddress();
+    }
+
+    public String getMobileAddress() throws UnknownHostException {
+        return CuratorBusiness.getMobileAddress();
     }
 
     public String getHostIp() throws UnknownHostException {

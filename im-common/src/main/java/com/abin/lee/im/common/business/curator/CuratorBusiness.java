@@ -5,6 +5,7 @@ import com.abin.lee.im.common.enums.common.ServerCconfigEnums;
 import com.abin.lee.im.common.enums.zk.ZookeeperConstantsEnums;
 import com.abin.lee.im.common.util.JsonUtil;
 import com.google.common.primitives.Ints;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -14,7 +15,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
-import org.springframework.util.ObjectUtils;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -65,20 +65,20 @@ public class CuratorBusiness {
             LOGGER.info("gateWayNodePath=" + gateWayNodePath);
             Stat gateWayNodePathStat = curatorFramework.checkExists().forPath(gateWayNodePath);
             LOGGER.info("gateWayNodePathStat=" + gateWayNodePathStat);
-            if(ObjectUtils.nullSafeEquals(null , gateWayNodePathStat))
+            if(!ObjectUtils.notEqual(null, gateWayNodePathStat))
                 curatorFramework.create().withMode(CreateMode.PERSISTENT).forPath(gateWayNodePath);
             //check /services/gateway/mobile
             String mobileGateWayNodePath = MessageFormat.format("/{0}/{1}", ZookeeperConstantsEnums.GATEWAY_NODE.toString(), ZookeeperConstantsEnums.MOBILE_NODE.toString());
             Stat mobileGateWayNodePathStat = curatorFramework.checkExists().forPath(mobileGateWayNodePath);
             LOGGER.info("mobileGateWayNodePathStat=" + mobileGateWayNodePathStat);
-            if(ObjectUtils.nullSafeEquals(null , mobileGateWayNodePathStat))
+            if(!ObjectUtils.notEqual(null, mobileGateWayNodePathStat))
                 curatorFramework.create().withMode(CreateMode.PERSISTENT).forPath(mobileGateWayNodePath);
 
             //check /services/gateway/web
             String webGateWayNodePath = MessageFormat.format("/{0}/{1}", ZookeeperConstantsEnums.GATEWAY_NODE.toString(), ZookeeperConstantsEnums.WEB_NODE.toString());
             Stat webGateWayNodePathStat = curatorFramework.checkExists().forPath(webGateWayNodePath);
             LOGGER.info("webGateWayNodePathStat=" + webGateWayNodePathStat);
-            if(ObjectUtils.nullSafeEquals(null , webGateWayNodePathStat))
+            if(!ObjectUtils.notEqual(null, webGateWayNodePathStat))
                 curatorFramework.create().withMode(CreateMode.PERSISTENT).forPath(webGateWayNodePath);
         } catch (Exception e) {
             e.printStackTrace();
@@ -95,7 +95,7 @@ public class CuratorBusiness {
                     getMobileAddress());
             Stat mobileGateWayNodePathStat = curatorFramework.checkExists().forPath(mobileGateWayNodePath);
             LOGGER.info("mobileGateWayNodePathStat=" + mobileGateWayNodePathStat);
-            if(ObjectUtils.nullSafeEquals(null , mobileGateWayNodePathStat))
+            if(!ObjectUtils.notEqual(null, mobileGateWayNodePathStat))
                 curatorFramework.create().withMode(CreateMode.EPHEMERAL).forPath(mobileGateWayNodePath);
 
             //publish socket /services/gateway/web
@@ -105,7 +105,7 @@ public class CuratorBusiness {
                     getWebAddress());
             Stat webGateWayNodePathStat = curatorFramework.checkExists().forPath(webGateWayNodePath);
             LOGGER.info("webGateWayNodePathStat=" + webGateWayNodePathStat);
-            if(ObjectUtils.nullSafeEquals(null , webGateWayNodePathStat))
+            if(!ObjectUtils.notEqual(null, webGateWayNodePathStat))
                 curatorFramework.create().withMode(CreateMode.EPHEMERAL).forPath(webGateWayNodePath);
         } catch (Exception e) {
             e.printStackTrace();
@@ -127,6 +127,44 @@ public class CuratorBusiness {
                     publishGateWayZookeeper();
                 }
             });
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(0);
+        }
+    }
+
+
+    public static void deleteGateWayZookeeper() {
+        try{
+            //publish websocket /services/gateway/mobile
+            String mobileGateWayNodePath = MessageFormat.format("/{0}/{1}/{2}",
+                    ZookeeperConstantsEnums.GATEWAY_NODE.toString(),
+                    ZookeeperConstantsEnums.MOBILE_NODE.toString(),
+                    getMobileAddress());
+            Stat mobileGateWayNodePathStat = curatorFramework.checkExists().forPath(mobileGateWayNodePath);
+            LOGGER.info("mobileGateWayNodePathStat=" + mobileGateWayNodePathStat);
+            if(ObjectUtils.notEqual(null, mobileGateWayNodePathStat))
+                curatorFramework.delete().forPath(mobileGateWayNodePath);
+
+            //publish socket /services/gateway/web
+            String webGateWayNodePath = MessageFormat.format("/{0}/{1}/{2}",
+                    ZookeeperConstantsEnums.GATEWAY_NODE.toString(),
+                    ZookeeperConstantsEnums.WEB_NODE.toString(),
+                    getWebAddress());
+            Stat webGateWayNodePathStat = curatorFramework.checkExists().forPath(webGateWayNodePath);
+            LOGGER.info("webGateWayNodePathStat=" + webGateWayNodePathStat);
+            if(ObjectUtils.notEqual(null, webGateWayNodePathStat))
+                curatorFramework.delete().forPath(webGateWayNodePath);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(0);
+        }
+    }
+
+
+    public static void closeGateWayZookeeper() {
+        try{
+            curatorFramework.close();
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(0);
