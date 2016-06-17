@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+
+
+    <context:component-scan base-package="com.abin.lee.im.common.redis" />
+
+    <bean id="redisService" class="com.abin.lee.im.common.redis.RedisServiceImpl">
+        <property name="rJedisPool" ref="jedisMaster" />
+        <property name="wJedisPool" ref="jedisMaster" />
+    </bean>
+
+
+    <bean id="jedisMaster" class="redis.clients.jedis.JedisPool">
+        <constructor-arg name="poolConfig" ref="jedisPoolConfigs" />
+        <constructor-arg name="host" value="${redis.sharding1.host}" />
+        <constructor-arg name="port" value="${redis.sharding1.port}" />
+        <constructor-arg name="timeout" value="${redis.timeout}" />
+    </bean>
+
+    <bean id="jedisSlave" class="redis.clients.jedis.JedisPool">
+        <constructor-arg name="poolConfig" ref="jedisPoolConfigs" />
+        <constructor-arg name="host" value="${redis.sharding2.host}" />
+        <constructor-arg name="port" value="${redis.sharding2.port}" />
+        <constructor-arg name="timeout" value="${redis.timeout}" />
+    </bean>
+
+    <bean id="jedisPoolConfigs" class="redis.clients.jedis.JedisPoolConfig">
+        <property name="maxTotal" value="5000" />
+        <property name="maxIdle" value="100" />
+        <property name="maxWaitMillis" value="5000" />
+        <property name="testOnBorrow" value="false" />
+    </bean>
+
+
+
+
+
+    <!--<bean id="clusterService" class="com.heika.platform.redis.util.RedisClusterServiceImpl">-->
+        <!--<constructor-arg index="0"  >-->
+            <!--<set>-->
+                <!--<ref bean="hostAndPort1"/>-->
+                <!--<ref bean="hostAndPort2"/>-->
+            <!--</set>-->
+        <!--</constructor-arg>-->
+        <!--<constructor-arg index="1" ref="genericObjectPoolConfig" />-->
+    <!--</bean>-->
+
+    <!--<bean name="genericObjectPoolConfig" class="org.apache.commons.pool2.impl.GenericObjectPoolConfig" >-->
+        <!--<property name="maxWaitMillis" value="-1" />-->
+        <!--<property name="maxTotal" value="1000" />-->
+        <!--<property name="minIdle" value="8" />-->
+        <!--<property name="maxIdle" value="100" />-->
+    <!--</bean>-->
+
+
+    <!--<bean id="hostAndPort1" class="redis.clients.jedis.HostAndPort">-->
+        <!--<constructor-arg index="0" value="${redis.sharding1.host}" />-->
+        <!--<constructor-arg index="1" value="${redis.sharding1.port}" />-->
+    <!--</bean>-->
+    <!--<bean id="hostAndPort2" class="redis.clients.jedis.HostAndPort">-->
+        <!--<constructor-arg index="0" value="${redis.sharding2.host}" />-->
+        <!--<constructor-arg index="1" value="${redis.sharding2.port}" />-->
+    <!--</bean>-->
+
+
+</beans>

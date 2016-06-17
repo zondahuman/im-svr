@@ -1,4 +1,4 @@
-package com.abin.lee.im.gate.handler;
+package com.abin.lee.im.gate.base.handler;
 
 import com.abin.lee.im.model.proto.MsgBodyProto;
 import com.abin.lee.im.model.proto.MsgHeaderProto;
