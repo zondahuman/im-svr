@@ -2,13 +2,14 @@ package com.abin.lee.im.router;
 
 
 import com.abin.lee.im.common.util.NamedThreadFactory;
-import com.abin.lee.im.router.handler.RouterServerHandler;
+import com.abin.lee.im.router.base.handler.RouterServerHandler;
+import com.abin.lee.im.router.base.hook.RouterShutdownHook;
+import com.abin.lee.im.router.handler.AbstractBaseRouter;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -20,15 +21,21 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 
-public class RouterServer {
+public class RouterServer extends AbstractBaseRouter{
     private static Logger LOGGER = LogManager.getLogger(RouterServer.class);
+    static {
+        System.setProperty("AsyncLogger.RingBufferSize", String.valueOf(1 * 1024 * 1024));
+        System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
+        System.setProperty("AsyncLogger.ThreadNameStrategy", "CACHED");// 如果在线程池中通过Thread.setName()，这里需要修改为UNCACHED
+        System.setProperty("log4j.Clock", "CachedClock");
+    }
 
     private NamedThreadFactory bossNamedThreadFac = new NamedThreadFactory("NettyAcceptSelectorProcessor", false);
     private NamedThreadFactory workerNamedThreadFac = new NamedThreadFactory("NettyReadSelectorProcessor", true);
     private int availableCpu = Runtime.getRuntime().availableProcessors();
     private ServerBootstrap serverBootstrap;
 
-    public void bind(final int bindPort, String host)throws Exception{
+    public void initConnect()throws Exception{
 
         serverBootstrap = new ServerBootstrap();
         //conf server nio threadpool
@@ -46,30 +53,8 @@ public class RouterServer {
                     .option(ChannelOption.SO_RCVBUF, 1 * 1024 * 1024)// 1m
                     .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 256 * 1024) // 调大写出buffer为512kb
                     .handler(new LoggingHandler(LogLevel.INFO))
-                    .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                   ;
 
-                        @Override
-                        protected void initChannel(SocketChannel ch) throws Exception {
-                            ch.pipeline()
-                                    .addLast(new RouterServerHandler());
-                        }
-
-                    });
-
-            //binding port，sync wait success
-            ChannelFuture channelFuture = serverBootstrap.bind(host, bindPort).sync();
-
-            channelFuture.addListener(new GenericFutureListener<Future<Object>>() {
-                @Override
-                public void operationComplete(Future<Object> future) throws Exception {
-                    if (future.isSuccess()) {
-                        LOGGER.info("IM RouterServer Start! binding port on:" + bindPort);
-                    }
-                }
-            });
-            //waiting listening port to wait shutdown
-            channelFuture.channel().closeFuture().sync();
 
         }finally{
             //exit Release resources
@@ -78,12 +63,47 @@ public class RouterServer {
         }
     }
 
-    public static void main(String[] args) throws Exception{
-        int port = 8085;
-        if(args!=null && args.length > 0){
-            port = Integer.valueOf(args[0]);
-        }
-        new RouterServer().bind(port, "127.0.0.1");
+    public void listen(final int bindPort, String host) throws Exception {
+        serverBootstrap.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                .childHandler(new ChannelInitializer<SocketChannel>() {
 
+                    @Override
+                    protected void initChannel(SocketChannel ch) throws Exception {
+                        ch.pipeline()
+                                .addLast(new RouterServerHandler());
+                    }
+
+                });
+
+        //binding port，sync wait success
+        ChannelFuture channelFuture = serverBootstrap.bind(host, bindPort).sync();
+
+        channelFuture.addListener(new GenericFutureListener<Future<Object>>() {
+            @Override
+            public void operationComplete(Future<Object> future) throws Exception {
+                if (future.isSuccess()) {
+                    LOGGER.info("IM RouterServer Start! binding port on:" + bindPort);
+                }
+            }
+        });
+        //waiting listening port to wait shutdown
+        channelFuture.channel().closeFuture().sync();
+    }
+
+    public void start() throws Exception {
+        LOGGER.info("start----router---starting");
+        this.init();
+        initConnect();
+        listen(this.getRouterPort(), this.getHostIp());
+        LOGGER.info("start----router---ending");
+    }
+
+
+    public static void main(String[] args) throws Exception{
+        new RouterServer().start();
+        if (true) {
+            for(;;){}
+        }
+        Runtime.getRuntime().addShutdownHook(new RouterShutdownHook());
     }
 }

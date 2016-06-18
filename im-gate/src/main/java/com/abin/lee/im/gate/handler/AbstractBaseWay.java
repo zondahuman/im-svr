@@ -1,13 +1,9 @@
 package com.abin.lee.im.gate.handler;
 
-import com.abin.lee.im.common.business.curator.CuratorBusiness;
-import com.abin.lee.im.common.business.properties.GateWayPropertyConfig;
-import com.abin.lee.im.common.enums.common.ServerCconfigEnums;
-import com.google.common.primitives.Ints;
+import com.abin.lee.im.common.business.curator.GateWayCuratorBusiness;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 /**
@@ -21,32 +17,31 @@ public abstract class AbstractBaseWay {
     private static Logger LOGGER = LogManager.getLogger(AbstractBaseWay.class);
 
     public void init() throws InterruptedException {
-        CuratorBusiness.initZookeeperClient();
-        CuratorBusiness.registerGateWayZookeeper();
-        CuratorBusiness.publishGateWayZookeeper();
-        CuratorBusiness.reCheckConnect();
+        GateWayCuratorBusiness.initZookeeperClient();
+        GateWayCuratorBusiness.registerGateWayZookeeper();
+        GateWayCuratorBusiness.publishGateWayZookeeper();
+        GateWayCuratorBusiness.reCheckConnect();
     }
 
     public String getWebAddress() throws UnknownHostException {
-        return CuratorBusiness.getWebAddress();
+        return GateWayCuratorBusiness.getWebAddress();
     }
 
     public String getMobileAddress() throws UnknownHostException {
-        return CuratorBusiness.getMobileAddress();
+        return GateWayCuratorBusiness.getMobileAddress();
     }
 
     public String getHostIp() throws UnknownHostException {
-        return CuratorBusiness.getHostIp();
+        return GateWayCuratorBusiness.getHostIp();
     }
 
     public Integer getWebPort() throws UnknownHostException {
-        return CuratorBusiness.getWebPort();
+        return GateWayCuratorBusiness.getWebPort();
     }
 
     public Integer getMobilePort() throws UnknownHostException {
-        return CuratorBusiness.getMobilePort();
+        return GateWayCuratorBusiness.getMobilePort();
     }
-
 
 
 }

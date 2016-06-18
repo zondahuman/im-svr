@@ -1,9 +1,9 @@
-package com.abin.lee.im.gate.base.hook;
+package com.abin.lee.im.router.base.hook;
 
 import com.abin.lee.im.common.business.curator.GateWayCuratorBusiness;
 
 
-public class GatewayShutdownHook extends Thread {
+public class RouterShutdownHook extends Thread {
 
     @Override
     public void run() {

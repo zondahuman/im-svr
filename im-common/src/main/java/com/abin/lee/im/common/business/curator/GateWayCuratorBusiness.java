@@ -28,8 +28,8 @@ import java.util.List;
  * Time: 下午10:26
  * To change this template use File | Settings | File Templates.
  */
-public class CuratorBusiness {
-    private static Logger LOGGER = LogManager.getLogger(CuratorBusiness.class);
+public class GateWayCuratorBusiness {
+    private static Logger LOGGER = LogManager.getLogger(GateWayCuratorBusiness.class);
     private static CuratorFramework curatorFramework = null;
     private static GateWayPropertyConfig propertyConfig = null;
 
@@ -123,8 +123,10 @@ public class CuratorBusiness {
             curatorFramework.getConnectionStateListenable().addListener(new ConnectionStateListener() {
                 @Override
                 public void stateChanged(CuratorFramework curatorFramework, ConnectionState connectionState) {
-                    registerGateWayZookeeper();
-                    publishGateWayZookeeper();
+                    if(connectionState == ConnectionState.RECONNECTED || connectionState == ConnectionState.CONNECTED){
+                        registerGateWayZookeeper();
+                        publishGateWayZookeeper();
+                    }
                 }
             });
         } catch (Exception e) {

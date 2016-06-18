@@ -29,6 +29,12 @@ public enum ServerCconfigEnums {
             return "im.gateway.web.port";
         }
     },
+    ROUTER_PORT("ROUTER_PORT"){
+        @Override
+        public String toString() {
+            return "im.router.port";
+        }
+    },
     ;
 
     private String param;

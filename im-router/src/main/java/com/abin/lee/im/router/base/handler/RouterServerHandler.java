@@ -1,4 +1,4 @@
-package com.abin.lee.im.router.handler;
+package com.abin.lee.im.router.base.handler;
 
 
 import com.abin.lee.im.model.proto.MsgBodyProto;

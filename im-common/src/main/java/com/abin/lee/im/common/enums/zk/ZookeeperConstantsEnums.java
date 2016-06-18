@@ -7,10 +7,6 @@ package com.abin.lee.im.common.enums.zk;
  * Time: 下午10:44
  * To change this template use File | Settings | File Templates.
  */
-
-/**
- *
- */
 public enum ZookeeperConstantsEnums {
 
     ROOT_NODE("ROOT_NODE"){
