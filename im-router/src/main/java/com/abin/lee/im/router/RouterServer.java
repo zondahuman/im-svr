@@ -2,7 +2,7 @@ package com.abin.lee.im.router;
 
 
 import com.abin.lee.im.common.util.NamedThreadFactory;
-import com.abin.lee.im.router.base.handler.RouterServerHandler;
+import com.abin.lee.im.router.base.handler.RouterServerChannelHandler;
 import com.abin.lee.im.router.base.hook.RouterShutdownHook;
 import com.abin.lee.im.router.handler.AbstractBaseRouter;
 import io.netty.bootstrap.ServerBootstrap;
@@ -70,7 +70,7 @@ public class RouterServer extends AbstractBaseRouter{
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline()
-                                .addLast(new RouterServerHandler());
+                                .addLast(new RouterServerChannelHandler());
                     }
 
                 });

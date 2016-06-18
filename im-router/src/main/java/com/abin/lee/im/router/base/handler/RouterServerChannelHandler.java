@@ -1,6 +1,7 @@
 package com.abin.lee.im.router.base.handler;
 
 
+import com.abin.lee.im.common.enums.channel.ChannelAttrNameContants;
 import com.abin.lee.im.model.proto.MsgBodyProto;
 import com.abin.lee.im.model.proto.MsgHeaderProto;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -17,9 +18,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.text.MessageFormat;
 
-public class RouterServerHandler extends ChannelInboundHandlerAdapter {
-    private static final Logger LOGGER = LogManager.getLogger(RouterServerHandler.class);
-    private static final AttributeKey<ByteBuf> cumulationKey = AttributeKey.valueOf("cumulation");
+public class RouterServerChannelHandler extends ChannelInboundHandlerAdapter {
+    private static final Logger LOGGER = LogManager.getLogger(RouterServerChannelHandler.class);
+    private static final AttributeKey<ByteBuf> cumulationKey = AttributeKey.valueOf(ChannelAttrNameContants.CUMULATION_HOLD.name());
 
     private final ByteToMessageDecoder.Cumulator MERGE_CUMULATOR = new ByteToMessageDecoder.Cumulator() {
         @Override

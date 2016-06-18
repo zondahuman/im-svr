@@ -5,6 +5,8 @@ import com.abin.lee.im.common.util.NamedThreadFactory;
 import com.abin.lee.im.gate.base.handler.GateWayChannelHandler;
 import com.abin.lee.im.gate.base.hook.GatewayShutdownHook;
 import com.abin.lee.im.gate.handler.AbstractBaseWay;
+import com.abin.lee.im.gate.handler.initializer.MobileChannelInitializer;
+import com.abin.lee.im.gate.handler.initializer.WebSocketChannelInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
@@ -20,6 +22,8 @@ import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.net.UnknownHostException;
+
 public class GateWayServer extends AbstractBaseWay {
     private static Logger LOGGER = LogManager.getLogger(GateWayServer.class);
 
@@ -34,7 +38,11 @@ public class GateWayServer extends AbstractBaseWay {
     private NamedThreadFactory workerNamedThreadFac = new NamedThreadFactory("NettyReadSelectorProcessor", true);
     private int availableCpu = Runtime.getRuntime().availableProcessors();
     private ServerBootstrap serverBootstrap;
+    private ChannelInitializer<SocketChannel> channelInitializer;
 
+    public void setChannelInitializer(ChannelInitializer<SocketChannel> channelInitializer) {
+        this.channelInitializer = channelInitializer;
+    }
 
     public void initConnect() throws Exception {
         serverBootstrap = new ServerBootstrap();
@@ -53,15 +61,7 @@ public class GateWayServer extends AbstractBaseWay {
                     .option(ChannelOption.SO_RCVBUF, 1 * 1024 * 1024)// 1m
                     .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 256 * 1024) // 调大写出buffer为512kb
                     .handler(new LoggingHandler(LogLevel.INFO))
-                    .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                    .childHandler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        protected void initChannel(SocketChannel ch) throws Exception {
-                            ch.pipeline()
-                                    .addLast(new GateWayChannelHandler());
-                        };
-                    });
-
+                   ;
         } finally {
             //exit Release resources
             bossGroup.shutdownGracefully();
@@ -71,6 +71,7 @@ public class GateWayServer extends AbstractBaseWay {
     }
 
     public void listen(final int bindPort, String host) throws Exception {
+        serverBootstrap.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
         //binding port，sync wait success
         ChannelFuture channelFuture = serverBootstrap.bind(host, bindPort).sync();
 
@@ -86,12 +87,24 @@ public class GateWayServer extends AbstractBaseWay {
         channelFuture.channel().closeFuture().sync();
     }
 
+    public void publishWebSocket() throws Exception {
+        ChannelInitializer<SocketChannel> webSocketInitializer = new WebSocketChannelInitializer();
+        setChannelInitializer(webSocketInitializer);
+        this.listen(this.getWebPort(), this.getHostIp());
+    }
+
+    public void publishMobileSocket() throws Exception {
+        ChannelInitializer<SocketChannel> webSocketInitializer = new MobileChannelInitializer();
+        setChannelInitializer(webSocketInitializer);
+        this.listen(this.getMobilePort(), this.getHostIp());
+    }
+
     public void start() throws Exception {
         LOGGER.info("start-------starting");
         this.init();
         initConnect();
-        listen(this.getWebPort(), this.getHostIp());
-        listen(this.getMobilePort(), this.getHostIp());
+        this.publishMobileSocket();
+        this.publishWebSocket();
         LOGGER.info("start-------ending");
     }
 

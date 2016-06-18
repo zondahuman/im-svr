@@ -92,7 +92,7 @@ public class RouterCuratorBusiness {
     public static void reCheckConnect(){
         try{
             List<String> routerAddressService = curatorFramework.getChildren().forPath(
-                    MessageFormat.format("/{0}/{1}", ZookeeperConstantsEnums.GATEWAY_NODE.toString(), getRouterAddress()));
+                    MessageFormat.format("/{0}/{1}", ZookeeperConstantsEnums.ROUTER_NODE.toString(), getRouterAddress()));
             LOGGER.info("routerAddressService=" + JsonUtil.toJson(routerAddressService));
             curatorFramework.getConnectionStateListenable().addListener(new ConnectionStateListener() {
                 @Override
