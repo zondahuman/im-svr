@@ -39,7 +39,7 @@ public class LoadStringServer {
                     .option(ChannelOption.TCP_NODELAY, false)// nagle algorithm
                     .option(ChannelOption.SO_SNDBUF, 1 * 1024 * 1024)// 1m
                     .option(ChannelOption.SO_RCVBUF, 1 * 1024 * 1024)// 1m
-                    .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 256 * 1024) // 调大写出buffer为512kb
+                    .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 1024 * 1024) // 调大写出buffer为512kb
                     .handler(new LoggingHandler(LogLevel.INFO))
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
